@@ -1,11 +1,14 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 	"net/http"
-	"time"
+	"strconv"
 )
+
+const loremIpsum = `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. `
 
 type flushWriter struct {
 	f http.Flusher
@@ -20,8 +23,7 @@ func (fw *flushWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
-// ServeJunk return junk content
-func ServeJunk(w http.ResponseWriter, r *http.Request) {
+func serveLoremIpsum(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -32,17 +34,31 @@ func ServeJunk(w http.ResponseWriter, r *http.Request) {
 		fw.f = f
 	}
 
-	fw.Write([]byte("Hello"))
-	time.Sleep(4 * time.Second)
-	fw.Write([]byte("World"))
+	index := 0
 
+	for i := 0; i < *size; i++ {
+		for j := 0; j < 1024; j++ {
+			for k := 0; k < 1024; k++ {
+				if index == len(loremIpsum) {
+					index = 0
+				}
+				fw.Write([]byte(string(loremIpsum[index])))
+				index++
+			}
+		}
+	}
 }
 
-func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", ServeJunk)
+var port = flag.Int("port", 9999, "port number")
+var size = flag.Int("size", 10, "size in mega bytes")
 
-	err := http.ListenAndServe(":8080", mux)
+func main() {
+	flag.Parse()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", serveLoremIpsum)
+
+	err := http.ListenAndServe(":"+strconv.Itoa(*port), mux)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
