@@ -24,6 +24,8 @@ func (fw *flushWriter) Write(p []byte) (n int, err error) {
 }
 
 func serveLoremIpsum(w http.ResponseWriter, r *http.Request) {
+	// Send the initial headers saying we're gonna stream the response.
+	w.Header().Set("Transfer-Encoding", "chunked")
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
